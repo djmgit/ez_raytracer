@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "ez_tracer.h": "c"
+        "ez_tracer.h": "c",
+        "raylib.h": "c",
+        "math.h": "c"
     }
 }

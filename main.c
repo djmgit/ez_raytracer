@@ -10,12 +10,17 @@
 #define FPS 60
 
 const Vec3 ORIGIN = (Vec3){0, 0, 0};
+const Vec3 BACKGROUND_COLOR = (Vec3){255, 255, 255};
 
 typedef struct {
     Vec3 center;
     float radius;
     Color3 color;
 } sphere_t;
+
+typedef struct {
+    sphere_t *spheres
+} scene_t;
 
 void screenDrawPixel(int x, int y, Color c, Image *image) {
     int sX = (SCREEN_WIDTH / 2) + x;
@@ -50,8 +55,27 @@ void getRaySphereIntersection(Vec3 *origin, Vec3 *rayDir, sphere_t *sphere, int 
     *t2 = (float)((-b - sqrt(discriminant)) / (2*a));
 }
 
-Color3 traceRay(Vec3 origin, Vec3 rayDir, float tMin, float tMax) {
-    float closetT = T_MAX;
+Color3 traceRay(Vec3 *origin, Vec3 *rayDir, float tMin, float tMax, scene_t *scene) {
+    float closestT = T_MAX;
+    sphere_t *closestSphere = NULL;
+    for (int i = 0; i < 3; i++) {
+        sphere_t sphere = scene->spheres[i];
+        int t1, t2;
+        getRaySphereIntersection(origin, rayDir, &sphere, &t1, &t2);
+        if (tMin <= t1 <= tMax) {
+            closestT = t1;
+            closestSphere = &(scene->spheres[i]);
+        }
+        if (tMin <= t2 <= tMax) {
+            closestT = t2;
+            closestSphere = &(scene->spheres[i]);
+        }
+    }
+
+    if (closestSphere == NULL) {
+        return BACKGROUND_COLOR;
+    }
+    return closestSphere->color;
 }
 
 
@@ -59,12 +83,27 @@ int main() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "ez_raytracer");
     SetTargetFPS(FPS);
 
-    Image i = GenImageColor(640, 400, (Color){255,255,255,255});
-    for (int c = 0; c < SCREEN_WIDTH; c++) {
-        ImageDrawPixel(&i, c, 10, (Color){0, 0, 255, 255});
+
+    Image image = GenImageColor(SCREEN_WIDTH, SCREEN_HEIGHT, (Color){255,255,255,255});
+    sphere_t spheres[3] = {
+        {{0, -1, 3}, 1, {255, 0, 0}},
+        {{2, 0, 4}, 1, {0, 0, 255}},
+        {{-2, 0, 4}, 1, {0, 255, 0}}
+    };
+
+    scene_t scene;
+    scene.spheres = malloc(sizeof(sphere_t) * 3);
+    scene.spheres = spheres;
+
+    for (int x = -1*(SCREEN_WIDTH / 2); x <= (SCREEN_WIDTH / 2); x++) {
+        for (int y = -1 * (SCREEN_HEIGHT / 2); y <= (SCREEN_HEIGHT / 2); y++) {
+            Vec3 d = screenToViewPort(x, y);
+            Color3 color = traceRay(&ORIGIN, &d, 1, T_MAX, &scene);
+            screenDrawPixel(x, y, (Color){color.x, color.y, color.z}, &image);
+        }
     }
-    ExportImage(i, "o.png");
-    Vec3
+
+    ExportImage(image, "o.png");
 
     //CloseWindow();
     return 0;
