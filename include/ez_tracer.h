@@ -1,5 +1,6 @@
 #include <math.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 typedef struct {
     float x;
@@ -47,7 +48,7 @@ Vec3 constant_multiply(Vec3 *veca, float factor) {
     return (Vec3){veca->x * factor, veca->y * factor, veca->z * factor};
 }
 
-Vec3 constant_multiply_equals(Vec3 *self, float factor) {
+void constant_multiply_equals(Vec3 *self, float factor) {
     self->x *= factor;
     self->y *= factor;
     self->z *= factor;

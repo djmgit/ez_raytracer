@@ -17,4 +17,4 @@ run:
 	./out
 
 clean:
-	rm -rf ./out
+	rm -rf ./out ./o.png
