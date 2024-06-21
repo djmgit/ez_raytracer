@@ -18,3 +18,6 @@ run:
 
 clean:
 	rm -rf ./out ./o.png
+
+show:
+	eog o.png

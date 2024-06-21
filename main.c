@@ -22,6 +22,7 @@ typedef struct {
     sphere_t *spheres;
 } scene_t;
 
+
 void screenDrawPixel(int x, int y, Color c, Image *image) {
     int sX = (SCREEN_WIDTH / 2) + x;
     int sY = (SCREEN_HEIGHT / 2) - y;
@@ -59,11 +60,9 @@ void getRaySphereIntersection(Vec3 *origin, Vec3 *rayDir, sphere_t *sphere, int 
 
 Color3 traceRay(Vec3 *origin, Vec3 *rayDir, float tMin, float tMax, scene_t *scene) {
     float closestT = T_MAX;
-    printf("%f, %f, %f\n", rayDir->x, rayDir->y, rayDir->z);
     sphere_t *closestSphere = NULL;
     for (int i = 0; i < 3; i++) {
         sphere_t sphere = scene->spheres[i];
-        //printf("processing shere: radius: %f\n", sphere.radius);
         int t1, t2;
         getRaySphereIntersection(origin, rayDir, &sphere, &t1, &t2);
         if ((tMin < t1 < tMax) && t1 < closestT) {
