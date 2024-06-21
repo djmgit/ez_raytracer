@@ -46,6 +46,30 @@ Vec3 screenToViewPort(int sX, int sY) {
     };
 }
 
+float computeLighting(Vec3 *point, Vec3 *normal, scene_t *scene) {
+    float i = 0.0;
+    for (int l = 0; l < 3; l++) {
+        light_t light = scene->lights[l];
+        if (light.type == 0) {
+            i += light.intensity;
+        } else {
+            Vec3 lightDir = {0, 0, 0};
+            if (light.type == 1) {
+                lightDir = sub(&light.lightVector, point);
+            } else {
+                lightDir = light.lightVector;
+            }
+
+            float normDotDir = dot(normal, &lightDir);
+            if (normDotDir > 0) {
+                i += light.intensity * (normDotDir/(magnitude(normal) * magnitude(&lightDir)));
+            }
+        }
+    }
+
+    return i;
+}
+
 void getRaySphereIntersection(Vec3 *origin, Vec3 *rayDir, sphere_t *sphere, int *t1, int *t2) {
     float r = sphere->radius;
     Vec3 centerToOrigin = sub(origin, &sphere->center);
@@ -69,7 +93,7 @@ void getRaySphereIntersection(Vec3 *origin, Vec3 *rayDir, sphere_t *sphere, int 
 Color3 traceRay(Vec3 *origin, Vec3 *rayDir, float tMin, float tMax, scene_t *scene) {
     float closestT = T_MAX;
     sphere_t *closestSphere = NULL;
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         sphere_t sphere = scene->spheres[i];
         int t1, t2;
         getRaySphereIntersection(origin, rayDir, &sphere, &t1, &t2);
@@ -86,7 +110,12 @@ Color3 traceRay(Vec3 *origin, Vec3 *rayDir, float tMin, float tMax, scene_t *sce
     if (closestSphere == NULL) {
         return BACKGROUND_COLOR;
     }
-    return closestSphere->color;
+
+    Vec3 tTimesDir = constant_multiply(rayDir, closestT);
+    Vec3 point = add(origin, &tTimesDir);
+    Vec3 normal = sub(&point, &closestSphere->center);
+    normal = constant_multiply(&normal, 1.0 / (magnitude(&normal)));
+    return constant_multiply(&closestSphere->color, computeLighting(&point, &normal, scene));
 }
 
 
@@ -96,10 +125,11 @@ int main() {
 
 
     Image image = GenImageColor(SCREEN_WIDTH, SCREEN_HEIGHT, (Color){255,255,255,255});
-    sphere_t spheres[3] = {
+    sphere_t spheres[4] = {
+        {{0, -5001.0, 0}, 5000, {255, 255, 0}},
         {{0, -1, 3}, 1, {255, 0, 0}},
         {{2, 0, 4}, 1, {0, 0, 255}},
-        {{-2, 0, 4}, 1, {0, 255, 0}}
+        {{-2, 0, 4}, 1, {0, 255, 0}},
     };
     light_t lights[3] = {
         {0, 0.2, {0, 0, 0}},
