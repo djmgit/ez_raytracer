@@ -18,10 +18,18 @@ typedef struct {
     Color3 color;
 } sphere_t;
 
+
+typedef struct {
+    int type;
+    float intensity;
+    // lightVector can be light position for point light or direction for directional lights
+    Vec3 lightVector;
+} light_t;
+
 typedef struct {
     sphere_t *spheres;
+    light_t *lights;
 } scene_t;
-
 
 void screenDrawPixel(int x, int y, Color c, Image *image) {
     int sX = (SCREEN_WIDTH / 2) + x;
@@ -93,10 +101,18 @@ int main() {
         {{2, 0, 4}, 1, {0, 0, 255}},
         {{-2, 0, 4}, 1, {0, 255, 0}}
     };
+    light_t lights[3] = {
+        {0, 0.2, {0, 0, 0}},
+        {1, 0.6, {2, 1, 0}},
+        {2, 0.2, {1, 4, 4}}
+    };
 
     scene_t scene;
     scene.spheres = malloc(sizeof(sphere_t) * 3);
     scene.spheres = spheres;
+
+    scene.lights = malloc(sizeof(light_t) * 3);
+    scene.lights = lights;
 
     for (int x = -1*(SCREEN_WIDTH / 2); x <= (SCREEN_WIDTH / 2); x++) {
         for (int y = -1 * (SCREEN_HEIGHT / 2); y <= (SCREEN_HEIGHT / 2); y++) {
