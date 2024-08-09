@@ -17,6 +17,7 @@ typedef struct {
     Vec3 center;
     float radius;
     Color3 color;
+    int specular;
 } sphere_t;
 
 
@@ -26,6 +27,20 @@ typedef struct {
     // lightVector can be light position for point light or direction for directional lights
     Vec3 lightVector;
 } light_t;
+
+float clampColorVal(float colorVal) {
+    if (colorVal < 0) {
+        return 0;
+    }
+    if (colorVal > 255) {
+        return 255;
+    }
+    return colorVal;
+}
+
+Vec3 clampColor(Vec3 *color) {
+    return (Vec3){clampColorVal(color->x), clampColorVal(color->y), clampColorVal(color->z)};
+}
 
 typedef struct {
     sphere_t *spheres;
@@ -47,7 +62,7 @@ Vec3 screenToViewPort(int sX, int sY) {
     };
 }
 
-float computeLighting(Vec3 *point, Vec3 *normal, scene_t *scene) {
+float computeLighting(Vec3 *point, Vec3 *normal, scene_t *scene, Vec3 *pointToCam, int specular) {
     float i = 0.0;
     for (int l = 0; l < 3; l++) {
         light_t light = scene->lights[l];
@@ -63,7 +78,17 @@ float computeLighting(Vec3 *point, Vec3 *normal, scene_t *scene) {
 
             float normDotDir = dot(normal, &lightDir);
             if (normDotDir > 0) {
-                i += light.intensity * (normDotDir/(magnitude(normal) * magnitude(&lightDir)));
+                i += light.intensity * (normDotDir/magnitude(&lightDir));
+            }
+
+            if (specular != -1) {
+                float normDotLightDir = dot(normal, &lightDir);
+                Vec3 prefix = constant_multiply(normal, 2.0*normDotLightDir);
+                Vec3 r = sub(&prefix, &lightDir);
+                float rDotPointToCam = dot(&r, pointToCam) * 1.0;
+                if (rDotPointToCam > 0) {
+                    i += light.intensity * pow(rDotPointToCam / (magnitude(&r) * magnitude(pointToCam)), specular*1.0);
+                }
             }
         }
     }
@@ -116,7 +141,8 @@ Color3 traceRay(Vec3 *origin, Vec3 *rayDir, float tMin, float tMax, scene_t *sce
     Vec3 point = add(origin, &tTimesDir);
     Vec3 normal = sub(&point, &closestSphere->center);
     normal = constant_multiply(&normal, 1.0 / (magnitude(&normal)));
-    return constant_multiply(&(closestSphere->color), computeLighting(&point, &normal, scene));
+    Vec3 pointToCam = constant_multiply(rayDir, -1.0);
+    return constant_multiply(&(closestSphere->color), computeLighting(&point, &normal, scene, &pointToCam, closestSphere->specular));
 }
 
 
@@ -127,10 +153,10 @@ int main() {
 
     Image image = GenImageColor(SCREEN_WIDTH, SCREEN_HEIGHT, (Color){255,255,255,255});
     sphere_t spheres[4] = {
-        {{0, -1, 3}, 1, {255, 0, 0}},
-        {{2, 0, 4}, 1, {0, 0, 255}},
-        {{-2, 0, 4}, 1, {0, 255, 0}},
-        {{0, -5001, 0}, 5000, {255, 255, 0}}
+        {{0, -1, 3}, 1, {255, 0, 0}, 500},
+        {{2, 0, 4}, 1, {0, 0, 255}, 500},
+        {{-2, 0, 4}, 1, {0, 255, 0}, 10},
+        {{0, -5001, 0}, 5000, {255, 255, 0}, 1000}
     };
     light_t lights[3] = {
         {0, 0.2, {0, 0, 0}},
@@ -149,6 +175,7 @@ int main() {
         for (int y = -1 * (SCREEN_HEIGHT / 2); y <= (SCREEN_HEIGHT / 2); y++) {
             Vec3 d = screenToViewPort(x, y);
             Color3 color = traceRay(&ORIGIN, &d, 1, T_MAX, &scene);
+            color = clampColor(&color);
             screenDrawPixel(x, y, (Color){(char)color.x, (char)color.y, (char)color.z, 255}, &image);
         }
     }
