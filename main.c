@@ -8,6 +8,7 @@
 #define VIEWPORT_HEIGHT 1.0
 #define CAMERA_VIEWPORT_DISTANCE 1.0
 #define FPS 60
+#define BASIC_TRACE 1
 
 const int T_MAX = INT_MAX;
 Vec3 ORIGIN = (Vec3){0.0, 0.0, 0.0};
@@ -136,6 +137,10 @@ Color3 traceRay(Vec3 *origin, Vec3 *rayDir, float tMin, float tMax, scene_t *sce
     if (closestSphere == NULL) {
         return BACKGROUND_COLOR;
     }
+
+    #ifdef BASIC_TRACE
+    return closestSphere->color;
+    #endif
 
     Vec3 tTimesDir = constant_multiply(rayDir, closestT);
     Vec3 point = add(origin, &tTimesDir);
